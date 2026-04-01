@@ -271,11 +271,3 @@ No tasks are interrupted mid-execution.
 2. **No priority scheduling**: Tasks execute in FIFO order (priority support is optional)
 3. **No work stealing**: Each worker pulls from a shared queue
 
-## License
-
-This project is developed for educational purposes as part of CSE 316.
-
-## Author
-
-CSE 316 Project - Scalable Thread Management Library
-# Thread_Management_Library
