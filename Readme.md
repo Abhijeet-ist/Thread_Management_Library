@@ -269,5 +269,5 @@ No tasks are interrupted mid-execution.
 
 1. **No task cancellation**: Once submitted, tasks cannot be cancelled
 2. **No priority scheduling**: Tasks execute in FIFO order (priority support is optional)
-3. **No work stealing**: Each worker pulls from a shared queue
+3. **No work stealing**:Each worker pulls from a shared queue
 
