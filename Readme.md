@@ -1,4 +1,4 @@
-# Scalable Thread Management Library (sthread)
+# Scalable Thread Management Library
 
 A high-performance, cross-platform thread management library written in C that provides thread pooling, synchronization primitives, and efficient task scheduling.
 
