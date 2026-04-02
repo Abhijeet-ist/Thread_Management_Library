@@ -1,6 +1,6 @@
 /**
  * @file platform.h
- * @brief Platform abstraction layer for macOS/Linux compatibility
+ * @brief Platform abstraction layer
  */
 
 #ifndef PLATFORM_H
@@ -9,10 +9,6 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdbool.h>
-
-/* ============================================================================
- * Platform Detection
- * ============================================================================ */
 
 #if defined(__APPLE__) && defined(__MACH__)
     #define STHREAD_PLATFORM_MACOS 1
@@ -23,10 +19,6 @@
 #else
     #error "Unsupported platform"
 #endif
-
-/* ============================================================================
- * Platform-Specific Includes
- * ============================================================================ */
 
 #ifdef STHREAD_PLATFORM_MACOS
     #include <sys/sysctl.h>
@@ -44,13 +36,6 @@
 #include <time.h>
 #include <errno.h>
 
-/* ============================================================================
- * Platform Functions
- * ============================================================================ */
-
-/**
- * @brief Get the number of CPU cores
- */
 static inline size_t platform_get_num_cores(void) {
 #ifdef STHREAD_PLATFORM_MACOS
     int count;
@@ -65,9 +50,6 @@ static inline size_t platform_get_num_cores(void) {
 #endif
 }
 
-/**
- * @brief Get monotonic time in nanoseconds
- */
 static inline uint64_t platform_get_time_ns(void) {
 #ifdef STHREAD_PLATFORM_MACOS
     static mach_timebase_info_data_t timebase = {0};
@@ -82,12 +64,8 @@ static inline uint64_t platform_get_time_ns(void) {
 #endif
 }
 
-/**
- * @brief Get current time for pthread_cond_timedwait
- */
 static inline void platform_get_abstime(struct timespec* ts, unsigned int timeout_ms) {
 #ifdef STHREAD_PLATFORM_MACOS
-    // macOS uses CLOCK_REALTIME for pthread_cond_timedwait
     struct timeval tv;
     gettimeofday(&tv, NULL);
     ts->tv_sec = tv.tv_sec + timeout_ms / 1000;
@@ -107,34 +85,20 @@ static inline void platform_get_abstime(struct timespec* ts, unsigned int timeou
 #endif
 }
 
-/**
- * @brief Get the system page size
- */
 static inline size_t platform_get_page_size(void) {
     return (size_t)sysconf(_SC_PAGESIZE);
 }
 
-/**
- * @brief Allocate memory with guard page
- * 
- * Allocates size bytes plus a guard page at the bottom for stack overflow detection.
- * 
- * @param size Size of memory to allocate
- * @param out_total_size Output: total size including guard page
- * @return Pointer to usable memory (after guard page), NULL on failure
- */
 static inline void* platform_alloc_with_guard(size_t size, size_t* out_total_size) {
     size_t page_size = platform_get_page_size();
     size_t total_size = size + page_size;
     
-    // Allocate memory
     void* mem = mmap(NULL, total_size, PROT_READ | PROT_WRITE,
                      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (mem == MAP_FAILED) {
         return NULL;
     }
     
-    // Set guard page as inaccessible
     if (mprotect(mem, page_size, PROT_NONE) != 0) {
         munmap(mem, total_size);
         return NULL;
@@ -144,13 +108,9 @@ static inline void* platform_alloc_with_guard(size_t size, size_t* out_total_siz
         *out_total_size = total_size;
     }
     
-    // Return pointer after guard page
     return (char*)mem + page_size;
 }
 
-/**
- * @brief Free memory allocated with guard page
- */
 static inline void platform_free_with_guard(void* ptr, size_t total_size) {
     if (ptr) {
         size_t page_size = platform_get_page_size();
@@ -159,9 +119,6 @@ static inline void platform_free_with_guard(void* ptr, size_t total_size) {
     }
 }
 
-/**
- * @brief Thread-safe memory barrier
- */
 static inline void platform_memory_barrier(void) {
     __sync_synchronize();
 }

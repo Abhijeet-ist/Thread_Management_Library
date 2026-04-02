@@ -7,10 +7,6 @@
 #include <errno.h>
 #include <string.h>
 
-/* ============================================================================
- * Error code mapping
- * ============================================================================ */
-
 #define STHREAD_SUCCESS        0
 #define STHREAD_ERROR_NOMEM   -1
 #define STHREAD_ERROR_INVALID -2
@@ -29,10 +25,6 @@ static int map_pthread_error(int err) {
     }
 }
 
-/* ============================================================================
- * Mutex Implementation
- * ============================================================================ */
-
 int sync_mutex_init(sync_mutex_t* mutex) {
     if (!mutex) {
         return STHREAD_ERROR_INVALID;
@@ -40,7 +32,6 @@ int sync_mutex_init(sync_mutex_t* mutex) {
     
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
-    // Use error-checking mutex for debugging
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
     
     int ret = pthread_mutex_init(&mutex->lock, &attr);
@@ -89,10 +80,6 @@ int sync_mutex_unlock(sync_mutex_t* mutex) {
     
     return map_pthread_error(pthread_mutex_unlock(&mutex->lock));
 }
-
-/* ============================================================================
- * Condition Variable Implementation
- * ============================================================================ */
 
 int sync_cond_init(sync_cond_t* cond) {
     if (!cond) {
@@ -155,12 +142,6 @@ int sync_cond_broadcast(sync_cond_t* cond) {
     return map_pthread_error(pthread_cond_broadcast(&cond->cond));
 }
 
-/* ============================================================================
- * Semaphore Implementation
- * 
- * Uses mutex + condition variable for portability (works on macOS and Linux).
- * ============================================================================ */
-
 int sync_sem_init(sync_sem_t* sem, unsigned int value) {
     if (!sem) {
         return STHREAD_ERROR_INVALID;
@@ -178,7 +159,7 @@ int sync_sem_init(sync_sem_t* sem, unsigned int value) {
     }
     
     sem->count = value;
-    sem->max_count = value;  // Track initial value for potential debugging
+    sem->max_count = value;
     sem->initialized = true;
     
     return STHREAD_SUCCESS;
@@ -189,7 +170,6 @@ int sync_sem_destroy(sync_sem_t* sem) {
         return STHREAD_ERROR_INVALID;
     }
     
-    // Destroy condition variable first
     int ret = pthread_cond_destroy(&sem->cond);
     if (ret != 0) {
         return map_pthread_error(ret);
@@ -210,12 +190,10 @@ int sync_sem_wait(sync_sem_t* sem) {
     
     pthread_mutex_lock(&sem->lock);
     
-    // Wait while count is zero
     while (sem->count == 0) {
         pthread_cond_wait(&sem->cond, &sem->lock);
     }
     
-    // Decrement count
     sem->count--;
     
     pthread_mutex_unlock(&sem->lock);
@@ -251,7 +229,6 @@ int sync_sem_post(sync_sem_t* sem) {
     
     sem->count++;
     
-    // Signal one waiting thread
     pthread_cond_signal(&sem->cond);
     
     pthread_mutex_unlock(&sem->lock);

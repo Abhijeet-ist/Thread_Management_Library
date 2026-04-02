@@ -10,10 +10,6 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-/* ============================================================================
- * Internal Mutex Implementation
- * ============================================================================ */
-
 typedef struct {
     pthread_mutex_t lock;
     bool initialized;
@@ -24,10 +20,6 @@ int sync_mutex_destroy(sync_mutex_t* mutex);
 int sync_mutex_lock(sync_mutex_t* mutex);
 int sync_mutex_trylock(sync_mutex_t* mutex);
 int sync_mutex_unlock(sync_mutex_t* mutex);
-
-/* ============================================================================
- * Internal Condition Variable Implementation
- * ============================================================================ */
 
 typedef struct {
     pthread_cond_t cond;
@@ -40,12 +32,6 @@ int sync_cond_wait(sync_cond_t* cond, sync_mutex_t* mutex);
 int sync_cond_timedwait(sync_cond_t* cond, sync_mutex_t* mutex, unsigned int timeout_ms);
 int sync_cond_signal(sync_cond_t* cond);
 int sync_cond_broadcast(sync_cond_t* cond);
-
-/* ============================================================================
- * Internal Semaphore Implementation
- * 
- * Implemented using mutex + condition variable for macOS compatibility.
- * ============================================================================ */
 
 typedef struct {
     pthread_mutex_t lock;

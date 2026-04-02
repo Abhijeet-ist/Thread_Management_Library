@@ -1,9 +1,6 @@
 /**
  * @file sthread.c
- * @brief Public API implementation - glue layer for the sthread library
- * 
- * This file implements all public API functions declared in sthread.h.
- * It connects user-facing functions to internal implementations.
+ * @brief Public API implementation
  */
 
 #include "../include/sthread.h"
@@ -15,24 +12,12 @@
 #include <string.h>
 #include <pthread.h>
 
-/* ============================================================================
- * Version Information
- * ============================================================================ */
-
 #define STHREAD_VERSION_STRING "1.0.0"
-
-/* ============================================================================
- * Thread Handle Structure
- * ============================================================================ */
 
 struct sthread_handle {
     pthread_t thread;
     bool detached;
 };
-
-/* ============================================================================
- * Basic Thread Operations
- * ============================================================================ */
 
 int sthread_create(sthread_t* thread, sthread_func_t func, void* arg) {
     if (!thread || !func) {
@@ -95,7 +80,6 @@ int sthread_detach(sthread_t thread) {
 }
 
 sthread_t sthread_self(void) {
-    // Note: This returns a new handle each time - not ideal but functional
     struct sthread_handle* handle = malloc(sizeof(struct sthread_handle));
     if (!handle) {
         return NULL;
@@ -108,10 +92,6 @@ sthread_t sthread_self(void) {
 void sthread_yield(void) {
     sched_yield();
 }
-
-/* ============================================================================
- * Mutex Operations
- * ============================================================================ */
 
 int sthread_mutex_init(sthread_mutex_t* mutex) {
     if (!mutex) {
@@ -170,10 +150,6 @@ int sthread_mutex_unlock(sthread_mutex_t* mutex) {
     
     return sync_mutex_unlock((sync_mutex_t*)mutex->internal);
 }
-
-/* ============================================================================
- * Condition Variable Operations
- * ============================================================================ */
 
 int sthread_cond_init(sthread_cond_t* cond) {
     if (!cond) {
@@ -249,10 +225,6 @@ int sthread_cond_broadcast(sthread_cond_t* cond) {
     return sync_cond_broadcast((sync_cond_t*)cond->internal);
 }
 
-/* ============================================================================
- * Semaphore Operations
- * ============================================================================ */
-
 int sthread_sem_init(sthread_sem_t* sem, unsigned int value) {
     if (!sem) {
         return STHREAD_ERROR_INVALID;
@@ -318,10 +290,6 @@ int sthread_sem_getvalue(sthread_sem_t* sem, int* value) {
     
     return sync_sem_getvalue((sync_sem_t*)sem->internal, value);
 }
-
-/* ============================================================================
- * Thread Pool Operations
- * ============================================================================ */
 
 sthread_pool_t* sthread_pool_create(size_t num_threads) {
     return (sthread_pool_t*)thread_pool_create(num_threads, 0);
@@ -406,10 +374,6 @@ size_t sthread_pool_active(sthread_pool_t* pool) {
 size_t sthread_pool_size(sthread_pool_t* pool) {
     return thread_pool_size((thread_pool_t*)pool);
 }
-
-/* ============================================================================
- * Utility Functions
- * ============================================================================ */
 
 size_t sthread_get_num_cores(void) {
     return platform_get_num_cores();

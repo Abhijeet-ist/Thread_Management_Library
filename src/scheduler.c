@@ -1,6 +1,6 @@
 /**
  * @file scheduler.c
- * @brief Task scheduler implementation (FIFO queue)
+ * @brief Task scheduler implementation
  */
 
 #include "scheduler.h"
@@ -41,7 +41,6 @@ void task_queue_destroy(task_queue_t* queue) {
     
     pthread_mutex_lock(&queue->lock);
     
-    // Free all pending tasks
     task_node_t* node = queue->head;
     while (node) {
         task_node_t* next = node->next;
@@ -66,7 +65,6 @@ int task_queue_push(task_queue_t* queue, task_func_t func, void* arg,
         return -1;
     }
     
-    // Allocate task node
     task_node_t* node = malloc(sizeof(task_node_t));
     if (!node) {
         return -1;
@@ -80,26 +78,22 @@ int task_queue_push(task_queue_t* queue, task_func_t func, void* arg,
     
     pthread_mutex_lock(&queue->lock);
     
-    // Check if shutdown
     if (queue->shutdown) {
         pthread_mutex_unlock(&queue->lock);
         free(node);
         return -1;
     }
     
-    // Wait if queue is full (bounded queue)
     while (queue->capacity > 0 && queue->count >= queue->capacity && !queue->shutdown) {
         pthread_cond_wait(&queue->not_full, &queue->lock);
     }
     
-    // Check shutdown again after wait
     if (queue->shutdown) {
         pthread_mutex_unlock(&queue->lock);
         free(node);
         return -1;
     }
     
-    // Add to tail of queue (FIFO)
     if (queue->tail) {
         queue->tail->next = node;
     } else {
@@ -108,7 +102,6 @@ int task_queue_push(task_queue_t* queue, task_func_t func, void* arg,
     queue->tail = node;
     queue->count++;
     
-    // Signal waiting consumers
     pthread_cond_signal(&queue->not_empty);
     
     pthread_mutex_unlock(&queue->lock);
@@ -123,18 +116,15 @@ int task_queue_pop(task_queue_t* queue, task_func_t* out_func, void** out_arg) {
     
     pthread_mutex_lock(&queue->lock);
     
-    // Wait while queue is empty and not shutting down
     while (queue->count == 0 && !queue->shutdown) {
         pthread_cond_wait(&queue->not_empty, &queue->lock);
     }
     
-    // Check if we woke up due to shutdown with empty queue
     if (queue->count == 0 && queue->shutdown) {
         pthread_mutex_unlock(&queue->lock);
         return -1;
     }
     
-    // Pop from head
     task_node_t* node = queue->head;
     queue->head = node->next;
     if (!queue->head) {
@@ -142,14 +132,12 @@ int task_queue_pop(task_queue_t* queue, task_func_t* out_func, void** out_arg) {
     }
     queue->count--;
     
-    // Signal waiting producers (bounded queue)
     if (queue->capacity > 0) {
         pthread_cond_signal(&queue->not_full);
     }
     
     pthread_mutex_unlock(&queue->lock);
     
-    // Extract task data
     *out_func = node->func;
     *out_arg = node->arg;
     free(node);
@@ -169,7 +157,6 @@ int task_queue_try_pop(task_queue_t* queue, task_func_t* out_func, void** out_ar
         return -1;
     }
     
-    // Pop from head
     task_node_t* node = queue->head;
     queue->head = node->next;
     if (!queue->head) {
@@ -177,14 +164,12 @@ int task_queue_try_pop(task_queue_t* queue, task_func_t* out_func, void** out_ar
     }
     queue->count--;
     
-    // Signal waiting producers (bounded queue)
     if (queue->capacity > 0) {
         pthread_cond_signal(&queue->not_full);
     }
     
     pthread_mutex_unlock(&queue->lock);
     
-    // Extract task data
     *out_func = node->func;
     *out_arg = node->arg;
     free(node);
@@ -211,7 +196,6 @@ void task_queue_shutdown(task_queue_t* queue) {
     
     pthread_mutex_lock(&queue->lock);
     queue->shutdown = true;
-    // Wake up all waiting threads
     pthread_cond_broadcast(&queue->not_empty);
     pthread_cond_broadcast(&queue->not_full);
     pthread_mutex_unlock(&queue->lock);
